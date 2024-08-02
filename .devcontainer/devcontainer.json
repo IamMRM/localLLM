@@ -1,0 +1,14 @@
+{
+  "name": "GPU Enabled Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "runArgs": [
+    "--runtime=nvidia",
+    "--gpus=all"
+  ],
+  "postCreateCommand": "echo 'Container created and GPU enabled!'",
+  "settings": {},
+  "extensions": [],
+  "dockerContext": "default"
+}
