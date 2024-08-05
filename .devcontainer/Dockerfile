@@ -6,6 +6,10 @@ USER root
 RUN apt-get update && \
     apt-get install -y sudo
 
+# Install Node.js (which includes npm)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && \
+    sudo apt-get install -y nodejs
+
 # Optional: Create a non-root user with sudo privileges
 RUN useradd -ms /bin/bash devuser && \
     echo "devuser:devpassword" | chpasswd && \

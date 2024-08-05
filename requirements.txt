@@ -1,3 +1,5 @@
 transformers
-
+fastapi
+uvicorn
 flake8
+gradio
