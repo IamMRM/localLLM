@@ -5,10 +5,14 @@
   },
   "runArgs": [
     "--runtime=nvidia",
-    "--gpus=all"
+    "--gpus=all",
+    "--env-file", ".env"
   ],
   "postCreateCommand": "echo 'Container created and GPU enabled!'",
   "settings": {},
   "extensions": [],
-  "dockerContext": "default"
+  "dockerContext": "default",
+  "mounts": [
+    "source=${localWorkspaceFolder}/models,target=/workspace/models,type=bind"
+  ]
 }

@@ -17,3 +17,9 @@ RUN useradd -ms /bin/bash devuser && \
 
 # Switch to the non-root user
 USER devuser
+
+WORKDIR /workspace
+
+# Copy the requirements.txt and install Python packages
+COPY requirements.txt /workspace/
+RUN pip install --upgrade pip && pip install -r requirements.txt
