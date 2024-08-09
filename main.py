@@ -3,16 +3,15 @@ from pydantic import BaseModel
 from transformers import LlamaForCausalLM, AutoTokenizer
 import torch
 import gradio as gr
+import os
 
 
-
-def load_model(model_name, device):
-    # Load the model and tokenizer
+def load_model(model_name, model_dir=""):
     print(f"Loading model {model_name}...")
-    model = LlamaForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16 if device == torch.device("cuda") else torch.float32)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-    # Set pad token if not already set
+    
+    model = LlamaForCausalLM.from_pretrained(model_dir, torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32)
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -41,9 +40,10 @@ def generate_text(prompt, max_length=50):
 
 def main():
     global model, tokenizer, device
-    model_name = "failspy/Meta-Llama-3-8B-Instruct-abliterated-v3"  # Adjust the model name accordingly
+    model_name = "failspy/Meta-Llama-3-8B-Instruct-abliterated-v3"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model, tokenizer = load_model(model_name, device)
+    model_dir = "Meta-Llama-3-8B"
+    model, tokenizer = load_model(model_name, model_dir)
     
     # Create Gradio interface
     interface = gr.Interface(fn=generate_text, 
