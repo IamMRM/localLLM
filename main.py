@@ -4,13 +4,19 @@ from transformers import LlamaForCausalLM, AutoTokenizer
 import torch
 import gradio as gr
 import os
+from transformers import BitsAndBytesConfig
 
+quantization_config = BitsAndBytesConfig(
+    load_in_8bit=True,  # or load_in_4bit=True for 4-bit quantization
+)
 
 def load_model(model_name, model_dir=""):
     print(f"Loading model {model_name}...")
     
-    model = LlamaForCausalLM.from_pretrained(model_dir, torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32)
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    model = LlamaForCausalLM.from_pretrained(model_dir, torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32)#, 
+    #quantization_config=quantization_config)
+    
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
     
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -49,7 +55,7 @@ def main():
     interface = gr.Interface(fn=generate_text, 
                              inputs=[
                                  gr.Textbox(lines=2, placeholder="Enter your question here..."), 
-                                 gr.Slider(10, 2000, value=500, step=10, label="Max Length")
+                                 gr.Slider(10, 2000, value=100, step=10, label="Max Length")
                              ], 
                              outputs="text",
                              title="Wild AI",
