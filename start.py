@@ -4,6 +4,7 @@ import gradio as gr
 from fastapi.middleware.cors import CORSMiddleware
 from llm_conversation import GenerateRequest
 from llm_service import load_model, generate_text
+from gradio_interface import GradioConversation
 
 app = FastAPI()
 
@@ -18,7 +19,6 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event():
-    global model, tokenizer
     try:
         model_name = "failspy/Meta-Llama-3-8B-Instruct-abliterated-v3"
         model_dir = "Meta-Llama-3-8B"
@@ -31,28 +31,37 @@ def startup_event():
 @app.post("/generate")
 def generate(request: GenerateRequest):
     try:
-        response = generate_text(request.prompt, request.max_length)
-        return {"generated_text": response}
+        conversation = conversations.get(request.conversation_id)
+        if not conversation and request.conversation_id:
+            conversation = Conversation()
+            conversations[request.conversation_id] = conversation
+
+        response = generate_text(request.prompt, conversation)
+        return {"generated_text": response, "conversation_id": request.conversation_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/clear_conversation/{conversation_id}")
+def clear_conversation(conversation_id: str):
+    if conversation_id in conversations:
+        conversations[conversation_id].clear()
+        return {"message": "Conversation cleared"}
+    else:
+        raise HTTPException(status_code=404, detail="Conversation not found")
 
 @app.get("/")
 def read_root():
     return {"status": "running"}
 
-# Gradio Interface
-def gradio_interface(prompt, max_length):
-    return generate_text(prompt, max_length)
 
-iface = gr.Interface(
-    fn=gradio_interface,
-    inputs=[
-        gr.Textbox(lines=2, placeholder="Enter your question here..."),
-        gr.Slider(10, 2000, value=100, step=10, label="Max Length")
-    ],
-    outputs="text",
-    title="Wild AI",
-    description="Ask whatever!"
-)
+
+gradio_conv = GradioConversation()
+
+with gr.Blocks() as iface:
+    chatbot = gr.Chatbot()
+    msg = gr.Textbox()
+    clear = gr.Button("Clear")
+    msg.submit(gradio_conv.generate, [msg, chatbot], [msg, chatbot])
+    clear.click(gradio_conv.clear, outputs=[chatbot])
 
 app = gr.mount_gradio_app(app, iface, path="/gradio")

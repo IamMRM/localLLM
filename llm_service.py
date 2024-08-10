@@ -2,7 +2,7 @@ from transformers import LlamaForCausalLM, AutoTokenizer
 import torch
 import os
 from transformers import BitsAndBytesConfig
-
+from llm_conversation import Conversation
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -18,8 +18,14 @@ def load_model(model_name, model_dir=""):
     model.to(device)
 
 
-def generate_text(prompt, max_length=50):
-    formatted_prompt = f"Q: {prompt}\nA:"
+def generate_text(prompt, conversation=None):
+    max_length=500 # hardcoding because of less GPU VRAM
+    if conversation:
+        context = conversation.get_context()
+        formatted_prompt = f"{context}\nHuman: {prompt}\nAI:"
+    else:
+        formatted_prompt = f"Human: {prompt}\nAI:"
+
     inputs = tokenizer(formatted_prompt, return_tensors="pt", padding=True, truncation=True, max_length=int(max_length)).to(model.device)
     attention_mask = inputs['attention_mask']
     input_ids = inputs['input_ids']
@@ -29,11 +35,19 @@ def generate_text(prompt, max_length=50):
         outputs = model.generate(
             input_ids, 
             attention_mask=attention_mask, 
-            max_length=int(max_length), 
+            max_new_tokens=1024,  # Set a reasonable upper limit
             num_return_sequences=1, 
-            pad_token_id=pad_token_id,
-            eos_token_id=tokenizer.eos_token_id  # Automatically handle end of sequence
+            do_sample=True,
+            max_length=int(max_length),
+            temperature=0.7,
+            pad_token_id=tokenizer.pad_token_id,
+            eos_token_id=tokenizer.eos_token_id
         )
 
     decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return decoded_output
+    response = decoded_output.split("AI:")[-1].strip()
+
+    if conversation:
+        conversation.add_exchange(prompt, response)
+
+    return response
