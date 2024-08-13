@@ -5,13 +5,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from llm_conversation import GenerateRequest
 from llm_service import load_model, generate_text
 from gradio_interface import GradioConversation
+def get_root_url(
+    request: Request, route_path: str, root_path: str | None
+):
+    return root_path
+import gradio.route_utils 
+gradio.route_utils.get_root_url = get_root_url
+
 
 app = FastAPI()
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*", "https://*.ngrok-free.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -63,4 +70,4 @@ with gr.Blocks() as iface:
     msg.submit(gradio_conv.generate, [msg, chatbot], [msg, chatbot])
     clear.click(gradio_conv.clear, outputs=[chatbot])
 
-app = gr.mount_gradio_app(app, iface, path="/gradio")
+app = gr.mount_gradio_app(app, iface, path="/gradio", root_path="/gradio")
