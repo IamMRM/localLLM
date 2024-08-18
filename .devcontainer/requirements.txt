@@ -3,3 +3,4 @@ fastapi
 uvicorn
 flake8
 gradio
+llama-cpp-python

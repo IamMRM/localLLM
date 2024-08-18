@@ -3,7 +3,7 @@ import gradio as gr
 #import threading
 from fastapi.middleware.cors import CORSMiddleware
 from llm_conversation import GenerateRequest
-from llm_service import load_model, generate_text
+from llm_service import load_model, generate_text, load_gguf_model
 from gradio_interface import GradioConversation
 def get_root_url(
     request: Request, route_path: str, root_path: str | None
@@ -27,9 +27,12 @@ app.add_middleware(
 @app.on_event("startup")
 def startup_event():
     try:
-        model_name = "failspy/Meta-Llama-3-8B-Instruct-abliterated-v3"
-        model_dir = "Meta-Llama-3-8B"
-        load_model(model_name, model_dir)
+        model_name = "Meta-Llama-3-8B-Instruct-abliterated-v3_q8"#"failspy/Meta-Llama-3-8B-Instruct-abliterated-v3"
+        model_dir = "./Meta-Llama-3-8BGGUF"
+        if "GGUF" in model_dir:
+            load_gguf_model(model_name, model_dir)
+        else:
+            load_model(model_name, model_dir)
         print("Model loaded successfully")
     except Exception as e:
         print(f"Failed to load model: {str(e)}")

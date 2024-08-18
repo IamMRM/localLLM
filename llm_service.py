@@ -3,9 +3,10 @@ import torch
 import os
 from transformers import BitsAndBytesConfig
 from llm_conversation import Conversation
+from llama_cpp import Llama
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+tokenizer=None
 
 def load_model(model_name, model_dir=""):
     global model, tokenizer
@@ -17,6 +18,12 @@ def load_model(model_name, model_dir=""):
         tokenizer.pad_token = tokenizer.eos_token
     model.to(device)
 
+def load_gguf_model(model_name, model_dir):
+    global model
+    print(f"Loading GGUF model {model_name}...")
+    model = Llama(model_path=f"{model_dir}/{model_name}.gguf")
+    print(f"Model {model_name} loaded successfully.")
+
 
 def generate_text(prompt, conversation=None):
     max_length=500 # hardcoding because of less GPU VRAM
@@ -26,25 +33,31 @@ def generate_text(prompt, conversation=None):
     else:
         formatted_prompt = f"Human: {prompt}\nAI:"
 
-    inputs = tokenizer(formatted_prompt, return_tensors="pt", padding=True, truncation=True, max_length=int(max_length)).to(model.device)
-    attention_mask = inputs['attention_mask']
-    input_ids = inputs['input_ids']
-    pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
+    if tokenizer:
+        inputs = tokenizer(formatted_prompt, return_tensors="pt", padding=True, truncation=True, max_length=int(max_length)).to(model.device)
+        attention_mask = inputs['attention_mask']
+        input_ids = inputs['input_ids']
+        pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
 
-    with torch.no_grad():
-        outputs = model.generate(
-            input_ids, 
-            attention_mask=attention_mask, 
-            max_new_tokens=1024,  # Set a reasonable upper limit
-            num_return_sequences=1, 
-            do_sample=True,
-            max_length=int(max_length),
-            temperature=0.7,
-            pad_token_id=tokenizer.pad_token_id,
-            eos_token_id=tokenizer.eos_token_id
-        )
+        with torch.no_grad():
+            outputs = model.generate(
+                input_ids, 
+                attention_mask=attention_mask, 
+                max_new_tokens=1024,  # Set a reasonable upper limit
+                num_return_sequences=1, 
+                do_sample=True,
+                max_length=int(max_length),
+                temperature=0.7,
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id
+            )
 
-    decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        decoded_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+    else:
+        response = model(formatted_prompt, max_tokens=500)
+        decoded_output = response['choices'][0]['text']
+    
     response = decoded_output.split("AI:")[-1].strip()
 
     if conversation:
