@@ -27,12 +27,12 @@ app.add_middleware(
 @app.on_event("startup")
 def startup_event():
     try:
-        model_name = "Meta-Llama-3-8B-Instruct-abliterated-v3_q8"#"failspy/Meta-Llama-3-8B-Instruct-abliterated-v3"
-        model_dir = "./Meta-Llama-3-8BGGUF"
-        if "GGUF" in model_dir:
+        model_name = "70B one"#"Meta-Llama-3-8B-Instruct-abliterated-v3_q8"#"failspy/Meta-Llama-3-8B-Instruct-abliterated-v3"
+        model_dir = "./Meta-Llama-70BGGUF"#"./Meta-Llama-3-8BGGUF"
+        if "7BGGUF" in model_dir:
             load_gguf_model(model_name, model_dir)
         else:
-            load_model(model_name, model_dir)
+            load_model(model_name, model_dir, use_safetensors=True)
         print("Model loaded successfully")
     except Exception as e:
         print(f"Failed to load model: {str(e)}")

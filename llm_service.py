@@ -4,14 +4,31 @@ import os
 from transformers import BitsAndBytesConfig
 from llm_conversation import Conversation
 from llama_cpp import Llama
+import bitsandbytes as bnb
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 tokenizer=None
 
-def load_model(model_name, model_dir=""):
+
+def load_model(model_name, model_dir="", use_safetensors=False):
     global model, tokenizer
     print(f"Loading model {model_name}...")
-    model = LlamaForCausalLM.from_pretrained(model_dir, torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32)
+    quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_compute_dtype=torch.float32,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4"
+    )
+
+    model = LlamaForCausalLM.from_pretrained(
+        model_dir, 
+        torch_dtype=torch.float16,
+        quantization_config=quantization_config,
+        device_map="cpu",
+        use_safetensors=use_safetensors,
+        low_cpu_mem_usage=True,
+        #offload_folder="offload_folder"
+    )
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
     
     if tokenizer.pad_token is None:
